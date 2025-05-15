@@ -1,0 +1,143 @@
+import os
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.chat_models import ChatOllama
+from langchain_core.runnables import RunnablePassthrough
+from langchain.retrievers.multi_query import MultiQueryRetriever
+
+class LocalRAGApp:
+    def __init__(self):
+        self.vector_db = None
+        self.chain = None
+        self.local_model = "deepseek-r1:1.5b"
+        
+    def install_dependencies(self):
+        """Install required dependencies"""
+        print("Installing required packages...")
+        os.system("pip install --quiet unstructured langchain")
+        os.system("pip install --quiet \"unstructured[all-docs]\"")
+        os.system("pip install --quiet langchain-community")
+        os.system("pip install --quiet pymupdf")
+        os.system("pip install --quiet chromadb")
+        os.system("pip install --quiet langchain-text-splitters")
+        os.system("ollama pull  znbang/bge:small-en-v1.5-q8_0")
+        os.system("ollama pull deepseek-r1:1.5b ")
+        print("Dependencies installed successfully.")
+    
+    def load_document(self, file_path):
+        """Load and process PDF document"""
+        print(f"Loading document: {file_path}")
+        loader = PyMuPDFLoader(file_path)
+        data = loader.load()
+        print(f"Document loaded successfully. Pages: {len(data)}")
+        return data
+    
+    def create_vector_db(self, data):
+        """Create vector database from document chunks"""
+        print("Creating vector database")
+        
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
+        chunks = text_splitter.split_documents(data)
+        
+        # Add to vector database
+        self.vector_db = Chroma.from_documents(
+            documents=chunks, 
+            embedding=OllamaEmbeddings(model="znbang/bge:small-en-v1.5-q8_0", show_progress=False),
+            collection_name="local-rag"
+        )
+        print("Vector database created successfully.")
+        
+    def setup_retrieval_chain(self):
+        """Set up the retrieval and response chain"""
+        print("Setting up retrieval chain")
+        
+        llm = ChatOllama(model=self.local_model)
+        
+        
+        QUERY_PROMPT = PromptTemplate(
+            input_variables=["question"],
+            template="""You are an AI assistant with access to specific document context. 
+            Answer the question strictly based on the provided context below. 
+            Do not use any external knowledge. If the answer is not in the context, simply say: 
+            I could not find the answer in the document
+            Original question: {question}""",
+        )
+        
+        retriever = MultiQueryRetriever.from_llm(
+            self.vector_db.as_retriever(), 
+            llm,
+            prompt=QUERY_PROMPT
+        )
+        
+        
+        template = """Answer the question based ONLY on the following context:
+        {context}
+        Question: {question}
+        """
+        
+        prompt = ChatPromptTemplate.from_template(template)
+        
+        self.chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+        print("Retrieval chain setup complete.")
+    
+    def query(self, question):
+        """Query the RAG system"""
+        if not self.chain:
+            print("Error: Please load a document and setup the chain first.")
+            return
+        
+        print("Processing your question...")
+        result = self.chain.invoke(question)
+        print("\nResponse:")
+        print(result)
+    
+    def cleanup(self):
+        """Clean up resources"""
+        if self.vector_db:
+            self.vector_db.delete_collection()
+            print("Vector database collection deleted.")
+
+def main():
+    app = LocalRAGApp()
+    
+    print("\nLocal RAG Application with Ollama")
+    print("--------------------------------")
+    
+    # Check if dependencies are installed correctly
+    install = input("Do you want to install required dependencies? (y/n): ").lower()
+    if install == 'y':
+        app.install_dependencies()
+    
+    
+    file_path = input("\nEnter the path to your PDF document: ")
+    if not os.path.exists(file_path):
+        print(f"Error: File not found at {file_path}")
+        return
+    
+    data = app.load_document(file_path)
+    app.create_vector_db(data)
+    app.setup_retrieval_chain()
+    
+    # Interactive query loop
+    print("\nEnter your questions about the document (type 'exit' to quit):")
+    while True:
+        question = input("\nQuestion: ")
+        if question.lower() == 'exit':
+            break
+        app.query(question)
+    
+    # Cleanup after finishing everything up
+    app.cleanup()
+    print("\nApplication closed.")
+
+if __name__ == "__main__":
+    main()
