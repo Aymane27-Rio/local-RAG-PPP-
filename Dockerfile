@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # OS dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
