@@ -1,0 +1,70 @@
+<think>
+Okay, I need to create a clear and concise summary based on the provided extrait from a document. Let me read through it carefully first.
+
+The document starts with an introduction titled "Ethics." It defines ethics as actions or behaviors that individuals engage in within society or outside of it, influencing the establishment and principles of society. It mentions that ethics studies these actions and values to understand good and evil.
+
+Next, there are two main branches: normative ethics and metaethics. Normative ethics is further divided into applied ethics, which deals with daily life decisions like politics or environment, focusing on determining what is ethical based on a moral framework. Metaethics addresses more abstract questions about the nature of ethics itself, including concepts of rightness/wrongness and whether ethical principles exist.
+
+Then there are branches under normative ethics: applied ethics and theoretical ethics (or metaethics). Theoretical ethics applies principles from other areas to evaluate actions in society or non-socially. It's mentioned that metaethics has influenced thinkers like Moore, Mackie, and Ayrne.
+
+After a brief history, the document provides an overview of how ethics is taught, with metaethics considered crucial for understanding human existence beyond societal structures.
+
+Now, I need to condense this into a summary. Let me structure it concisely:
+
+1. Introduction: Ethics are about guiding behaviors within society or outside, studying good and evil.
+2. Branches:
+   - Normative Ethics:
+     - Applied Ethics: Deals with applied contexts like politics; determines ethicalness via frameworks.
+     - Theoretical Ethics (Metaethics): Explores the nature of ethics independently.
+3. Influences: Influenced by Kant, Mill, Aristotle on normative, and Moore, Mackie, Ayrne on metaethics.
+4. Overview: Metaethics is important for understanding human existence.
+
+I need to make sure it's simple, clear, and captures all key points without getting too detailed. I'll ensure each section flows logically into the next.
+</think>
+
+**Ethics Summary**
+
+1. **Introduction**: Ethics are about guiding actions within society or outside of it, studying good and evil. They explore how individuals behave and contribute to societal foundations.
+
+2. **Branches**:
+   - **Normative Ethics**: This category deals with applying ethical principles in applied contexts like politics (determining what is ethical) and theoretical ethics (metaethics, exploring the nature of ethics independently).
+
+3. **Influences**: Influenced by prominent philosophers such as Immanuel Kant, John Stuart Mill, Aristotle for normative ethics; G.E. Moore, J.L. Mackie, and A.J. Ayer for metaethics.
+
+4. **Overview**: Metaethics is crucial for understanding human existence beyond societal structures, impacting how we evaluate moral principles in deeper philosophical contexts.
+
+------------------------------------------------------------
+
+<think>
+Alright, so I need to create a clear and concise summary based on the provided extrait. Let me first read through the text carefully.
+
+The extrait starts with "applied ethics comes in:" which is a good intro. It then lists several moral theories: Utilitarianism/Conentialism, Deontological, Virtue Ethics, Contractarianism, and another one called Metaethics. Each of these sections has a brief explanation.
+
+Then it moves on to Metaethics, talking about Epistemology, Semantics, and Metaphysics in more detail. The user also provided an example response, which seems well-structured but I'll need to make sure mine is similarly clear and concise.
+
+I think the main points are:
+
+1. Applied ethics covers moral theories.
+2. There's a section on Metaethics within that.
+
+Each part should be short and to the point without too much fluff. I'll start with an introduction about applied ethics, mention the key theories there, then touch on Metaethics as a branch covering epistemology, semantics, and metaphysics.
+
+I need to make sure each section is understandable but not overwhelming. Maybe use bullet points for better readability.
+</think>
+
+**Applied Ethics Summary**
+
+1. **Moral Theories in Applied Ethics:**
+   - Utilitarianism/Consequentialism: Focuses on outcomes (consequences) determining morality.
+   - Deontological Ethics: Evaluates actions based on their inherent rightness or wrongness without considering consequences.
+   - Virtue Ethics: Emphasizes character traits like courage and justice, shaping moral behavior through cultivation.
+
+2. **Metaethics Branch of Ethics:**
+   - Epistemology in Metaethics: Examines how we acquire ethical knowledge and justify our beliefs.
+   - Semantics in Metaethics: Investigates linguistic meanings related to ethics across social contexts.
+   - Metaphysics in Metaethics: Explores the nature of ethics, questioning their existence and objectivity.
+
+This summary provides a clear overview of applied ethics' key theories and its broader Metaethics branch.
+
+------------------------------------------------------------
+
