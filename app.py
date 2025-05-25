@@ -88,6 +88,39 @@ class LocalRAGApp:
             | StrOutputParser()
         )
         print("Retrieval chain setup complete.")
+
+        
+    def summarize_sections(self, documents):
+        """Résumé clair par section, enregistré dans summaries.txt"""
+        print("Génération des résumés de sections...")
+        llm = ChatOllama(model=self.local_model)
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
+        chunks = text_splitter.split_documents(documents)
+
+        prompt_template = ChatPromptTemplate.from_template(
+            "Voici un extrait d'un document :\n\n{content}\n\nFais un résumé clair, simple à comprendre et concis :"
+    )
+
+        chain = (
+            {"content": lambda x: x.page_content}
+            | prompt_template
+            | llm
+            | StrOutputParser()
+    )
+
+        with open("summaries.txt", "w", encoding="utf-8") as f:
+            for chunk in chunks:
+                try:
+                    summary = chain.invoke(chunk)
+                    if summary.strip():
+                        f.write(summary + "\n\n" + "-" * 60 + "\n\n")
+                except Exception as e:
+                    print(f"Erreur sur un chunk : {e}")
+        print("Résumé enregistré dans summaries.txt")
+
+
+    
     
     def query(self, question):
         """Query the RAG system"""
@@ -100,6 +133,10 @@ class LocalRAGApp:
         print("\nResponse:")
         print(result)
     
+
+
+
+
     def cleanup(self):
         """Clean up resources"""
         if self.vector_db:
@@ -124,6 +161,8 @@ def main():
         return
     
     data = app.load_document(file_path)
+    app.summarize_sections(data)  # Génére et exporte les résumés
+
     app.create_vector_db(data)
     app.setup_retrieval_chain()
     
@@ -138,6 +177,9 @@ def main():
     # Cleanup after finishing everything up
     app.cleanup()
     print("\nApplication closed.")
+
+
+
 
 if __name__ == "__main__":
     main()
