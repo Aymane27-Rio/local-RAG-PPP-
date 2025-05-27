@@ -10,7 +10,7 @@ app = LocalRAGApp()
 data = None
 
 with st.sidebar:
-    st.header("Step 1: Upload PDF")
+    st.header("Upload a PDF")
     uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
     if uploaded_file:
         with open("temp.pdf", "wb") as f:
@@ -18,38 +18,38 @@ with st.sidebar:
         data = app.load_document("temp.pdf")
         app.create_vector_db(data)
         app.setup_retrieval_chain()
-        st.success("✅ Document chargé et base vectorielle créée !")
+        st.success("✅ PDF uploaded succesfully !")
 
 # Zone principale
 if uploaded_file:
     st.markdown("---")
-    st.subheader("💬 Posez votre question sur le document")
+    st.subheader("💬 Ask about your PDF")
 
     question = st.text_input("Ask a question about your document:")
     if question:
         response = app.chain.invoke(question)
-        st.markdown("### ✅ Réponse :")
+        st.markdown("### ✅ Response :")
         st.success(response)
 
     st.markdown("---")
-    st.subheader("📚 Résumé des sections du document")
+    st.subheader("📚 Summary of the PDF sections")
 
-    if st.button("✨ Générer le résumé simplifié"):
-        with st.spinner("Génération des résumés..."):
+    if st.button("Generate a simplified summary"):
+        with st.spinner("Generating..."):
             app.summarize_sections(data)
             try:
                 with open("summaries.txt", "r", encoding="utf-8") as f:
                     summaries = f.read()
-                st.success("Résumé généré avec succès !")
+                st.success("Summary generated succesfully !")
                 st.markdown("#### 📝 Résumés :")
                 st.text_area(label="", value=summaries, height=400)
 
                 st.download_button(
-                    label="📥 Télécharger le résumé (.txt)",
+                    label="Download your summary (.txt)",
                     data=summaries,
                     file_name="resume_sections.txt",
                     mime="text/plain"
                 )
 
             except FileNotFoundError:
-                st.error("❌ Erreur : le fichier summaries.txt est introuvable.")
+                st.error(" Error : Something went wrong.")
