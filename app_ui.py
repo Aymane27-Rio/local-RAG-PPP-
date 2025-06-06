@@ -1,55 +1,87 @@
 import streamlit as st
-from app import LocalRAGApp  # importing app
+from app import LocalRAGApp #importing app.py
 
-st.set_page_config(page_title="Local RAG App", layout="centered")
+st.set_page_config(page_title="📄 Local RAG QA App", layout="wide", page_icon="📄")
 
-st.title("📄 Local RAG Document QA")
-st.markdown("Upload a PDF and ask questions about it!")
+# some styles added
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .sidebar .sidebar-content {
+        padding-top: 2rem;
+    }
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+    .stDownloadButton>button {
+        background-color: #007ACC;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.title(" Local RAG Document QA")
+st.markdown("Upload a PDF and ask questions. You can also generate simple summaries by section.")
 
 app = LocalRAGApp()
 data = None
 
 with st.sidebar:
-    st.header("Upload a PDF")
-    uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
+    st.header("📁 Upload your PDF")
+    uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
+    
     if uploaded_file:
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.read())
         data = app.load_document("temp.pdf")
-        app.create_vector_db(data)
-        app.setup_retrieval_chain()
-        st.success("✅ PDF uploaded succesfully !")
 
-# Zone principale
+        with st.spinner("🔄 Processing your document..."):
+            app.create_vector_db(data)
+            app.setup_retrieval_chain()
+
+        st.success("✅ PDF processed and ready!")
+
 if uploaded_file:
     st.markdown("---")
-    st.subheader("💬 Ask about your PDF")
+    st.subheader("💬 Ask Questions")
 
-    question = st.text_input("Ask a question about your document:")
-    if question:
-        response = app.chain.invoke(question)
-        st.markdown("### ✅ Response :")
-        st.success(response)
+    with st.expander("Type your question below", expanded=True):
+        question = st.text_input("🔎 Question:")
+        if question:
+            with st.spinner("⏳ Searching the document..."):
+                response = app.chain.invoke(question)
+            st.markdown("### ✅ Response")
+            st.success(response)
 
     st.markdown("---")
-    st.subheader("📚 Summary of the PDF sections")
+    st.subheader("📚 Section Summarization")
 
-    if st.button("Generate a simplified summary"):
-        with st.spinner("Generating..."):
-            app.summarize_sections(data)
-            try:
-                with open("summaries.txt", "r", encoding="utf-8") as f:
-                    summaries = f.read()
-                st.success("Summary generated succesfully !")
-                st.markdown("#### 📝 Résumés :")
-                st.text_area(label="", value=summaries, height=400)
+    with st.expander("📄 Generate a simplified summary"):
+        if st.button("🧠 Summarize PDF Sections"):
+            with st.spinner("⏳ Summarizing..."):
+                app.summarize_sections(data)
+                try:
+                    with open("summaries.txt", "r", encoding="utf-8") as f:
+                        summaries = f.read()
+                    st.success("✅ Summary generated!")
+                    st.text_area("📝 Résumés", summaries, height=400)
 
-                st.download_button(
-                    label="Download your summary (.txt)",
-                    data=summaries,
-                    file_name="resume_sections.txt",
-                    mime="text/plain"
-                )
-
-            except FileNotFoundError:
-                st.error(" Error : Something went wrong.")
+                    st.download_button(
+                        label="⬇️ Download Summary (.txt)",
+                        data=summaries,
+                        file_name="resume_sections.txt",
+                        mime="text/plain"
+                    )
+                except FileNotFoundError:
+                    st.error("⚠️ Something went wrong.")
