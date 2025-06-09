@@ -120,6 +120,48 @@ class LocalRAGApp:
         print("Résumé enregistré dans summaries.txt")
 
 
+
+    def summarize_selected_pages(self, file_path, page_numbers):
+        """Summarize specific pages from the PDF and save to summaries.txt"""
+    
+        import fitz  # PyMuPDF
+
+        print(f"Summarizing selected pages: {page_numbers}")
+        llm = ChatOllama(model=self.local_model)
+
+        with fitz.open(file_path) as doc:
+            selected_texts = []
+            for page_num in page_numbers:
+                if 0 <= page_num < len(doc):
+                    text = doc[page_num].get_text()
+                    selected_texts.append(text)
+
+        summaries = []
+        prompt_template = ChatPromptTemplate.from_template(
+            "Voici un extrait d'un document :\n\n{content}\n\nFais un résumé clair, simple à comprendre et concis :"
+    )
+
+        chain = (
+            {"content": lambda x: x}
+            | prompt_template
+            | llm
+            | StrOutputParser()
+    )
+
+        with open("summaries.txt", "w", encoding="utf-8") as f:
+            for page_text in selected_texts:
+                try:
+                    summary = chain.invoke(page_text)
+                    if summary.strip():
+                        f.write(summary + "\n\n" + "-" * 60 + "\n\n")
+                        summaries.append(summary)
+                except Exception as e:
+                    print(f"Error summarizing a page: {e}")
+    
+        return summaries
+
+
+
     
     
     def query(self, question):

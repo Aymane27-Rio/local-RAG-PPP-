@@ -1,9 +1,10 @@
 import streamlit as st
-from app import LocalRAGApp #importing app.py
+import fitz  # PyMuPDF for PDF preview and page selection (new added feature)
+from app import LocalRAGApp  # importing app.py
 
 st.set_page_config(page_title="📄 Local RAG QA App", layout="wide", page_icon="📄")
 
-# some styles added
+# Styles
 st.markdown(
     """
     <style>
@@ -31,8 +32,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title(" Local RAG Document QA")
-st.markdown("Upload a PDF and ask questions. You can also generate simple summaries by section.")
+st.title("📄 Local RAG Document QA")
+st.markdown("Upload a PDF and ask questions. You can also generate simple summaries by section or by selecting specific pages.")
 
 app = LocalRAGApp()
 data = None
@@ -67,7 +68,7 @@ if uploaded_file:
     st.markdown("---")
     st.subheader("📚 Section Summarization")
 
-    with st.expander("📄 Generate a simplified summary"):
+    with st.expander("📄 Generate a simplified summary of the entire PDF"):
         if st.button("🧠 Summarize PDF Sections"):
             with st.spinner("⏳ Summarizing..."):
                 app.summarize_sections(data)
@@ -85,3 +86,30 @@ if uploaded_file:
                     )
                 except FileNotFoundError:
                     st.error("⚠️ Something went wrong.")
+
+    st.markdown("---")
+    st.subheader("📖 Select Pages to Summarize")
+
+    with st.expander("📌 Preview & Select Pages"):
+        doc = fitz.open("temp.pdf")
+        num_pages = len(doc)
+        st.markdown(f"**Total pages:** {num_pages}")
+        
+        page_selection = st.multiselect(
+            "Select page numbers to summarize (starting from 1):",
+            options=list(range(1, num_pages + 1))
+        )
+
+        if page_selection and st.button("🧠 Summarize Selected Pages"):
+            with st.spinner("⏳ Generating summary for selected pages..."):
+                summaries = app.summarize_selected_pages("temp.pdf", [p - 1 for p in page_selection])
+                full_summary = "\n\n".join(summaries)
+                st.success("✅ Summary generated for selected pages!")
+                st.text_area("📌 Summaries of Selected Pages", full_summary, height=400)
+                st.download_button(
+                    "⬇️ Download Selected Summary",
+                    full_summary,
+                    file_name="selected_summary.txt"
+                )
+        elif not page_selection:
+            st.info("Please select at least one page.")
