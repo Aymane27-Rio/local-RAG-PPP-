@@ -32,7 +32,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("📄 Local RAG Document QA")
+st.title("Local RAG Document QA")
 st.markdown("Upload a PDF and ask questions. You can also generate simple summaries by section or by selecting specific pages.")
 
 app = LocalRAGApp()
