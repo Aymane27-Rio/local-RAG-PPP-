@@ -30,8 +30,8 @@ cd local-rag-app
 ### 2. Create a Virtual Environment (usually recommended)
 
 ```bash
-python -m venv venv
-venv\Scripts\activate  # On Windows
+python3 -m venv venv
+source venv/Scripts/activate  # On Windows
 # OR
 source venv/bin/activate  # On Linux/Mac
 ```
