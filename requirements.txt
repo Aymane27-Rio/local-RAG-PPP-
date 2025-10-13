@@ -1,8 +1,10 @@
+streamlit
 langchain
 langchain-community
+langchain-core
 langchain-text-splitters
+pymupdf
+PyPDF2
 chromadb
 unstructured[all-docs]
-pymupdf
-streamlit
-ollama
+prometheus_client
