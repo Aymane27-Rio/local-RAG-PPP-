@@ -8,8 +8,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_community.chat_models import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
-
-
 from matplotlib.units import registry
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 import time
@@ -30,7 +28,6 @@ def push_metrics(requests, time_taken, avg_len):
         print("✅ Metrics pushed successfully to Pushgateway.")
     except Exception as e:
         print(f"⚠️ Could not push metrics: {e}")
-
 
 class LocalRAGApp:
     def __init__(self):
@@ -174,7 +171,6 @@ class LocalRAGApp:
             print("Résumé enregistré dans summaries.txt")
 
 
-
     def summarize_selected_pages(self, file_path, page_numbers):
         """Summarize specific pages from the PDF and save to summaries.txt"""
     
@@ -213,10 +209,7 @@ class LocalRAGApp:
                     print(f"Error summarizing a page: {e}")
     
         return summaries
-
-
-
-    
+ 
     
     def query(self, question):
         """Query the RAG system"""
@@ -229,9 +222,6 @@ class LocalRAGApp:
         print("\nResponse:")
         print(result)
     
-
-
-
 
     def cleanup(self):
         """Clean up resources"""
@@ -273,8 +263,6 @@ def main():
     # Cleanup after finishing everything up
     app.cleanup()
     print("\nApplication closed.")
-
-
 
 
 if __name__ == "__main__":
