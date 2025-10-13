@@ -9,6 +9,29 @@ from langchain_community.chat_models import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
 
+
+from matplotlib.units import registry
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+import time
+
+# Function to push metrics to Pushgateway
+def push_metrics(requests, time_taken, avg_len):
+    registry = CollectorRegistry()
+    request_count = Gauge('rag_request_count', 'Number of processed PDF summaries', registry=registry)
+    processing_time = Gauge('rag_processing_seconds', 'Processing time for the last request', registry=registry)
+    summary_length = Gauge('rag_summary_length', 'Average summary length', registry=registry)
+
+    request_count.set(requests)
+    processing_time.set(time_taken)
+    summary_length.set(avg_len)
+
+    try:
+        push_to_gateway('localhost:9091', job='localrag_app', registry=registry)
+        print("✅ Metrics pushed successfully to Pushgateway.")
+    except Exception as e:
+        print(f"⚠️ Could not push metrics: {e}")
+
+
 class LocalRAGApp:
     def __init__(self):
         self.vector_db = None
@@ -90,34 +113,65 @@ class LocalRAGApp:
         print("Retrieval chain setup complete.")
 
         
-    def summarize_sections(self, documents):
-        """Résumé clair par section, enregistré dans summaries.txt"""
-        print("Génération des résumés de sections...")
-        llm = ChatOllama(model=self.local_model)
+        def summarize_sections(self, documents):
+            """Résumé clair par section, enregistré dans summaries.txt + envoi de métriques à Prometheus Pushgateway"""
+            print("Génération des résumés de sections...")
+            llm = ChatOllama(model=self.local_model)
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
-        chunks = text_splitter.split_documents(documents)
+    # Prometheus setup
+            registry = CollectorRegistry()
+            summary_time = Gauge('summary_generation_seconds', 'Time spent generating summaries', registry=registry)
+            summary_chunks = Gauge('summary_chunks_total', 'Total number of chunks processed', registry=registry)
+            success_chunks = Gauge('summary_chunks_successful', 'Number of successfully summarized chunks', registry=registry)
+            failed_chunks = Gauge('summary_chunks_failed', 'Number of chunks that failed summarization', registry=registry)
 
-        prompt_template = ChatPromptTemplate.from_template(
-            "Voici un extrait d'un document :\n\n{content}\n\nFais un résumé clair, simple à comprendre et concis :"
-    )
+            import time
+            start_time = time.time()
+            total_chunks = 0
+            successful = 0
+            failed = 0
 
-        chain = (
-            {"content": lambda x: x.page_content}
-            | prompt_template
-            | llm
-            | StrOutputParser()
-    )
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
+            chunks = text_splitter.split_documents(documents)
 
-        with open("summaries.txt", "w", encoding="utf-8") as f:
-            for chunk in chunks:
-                try:
-                    summary = chain.invoke(chunk)
-                    if summary.strip():
-                        f.write(summary + "\n\n" + "-" * 60 + "\n\n")
-                except Exception as e:
-                    print(f"Erreur sur un chunk : {e}")
-        print("Résumé enregistré dans summaries.txt")
+            prompt_template = ChatPromptTemplate.from_template(
+                "Voici un extrait d'un document :\n\n{content}\n\nFais un résumé clair, simple à comprendre et concis :"
+            )
+
+            chain = (
+                {"content": lambda x: x.page_content}
+                | prompt_template
+                | llm
+                | StrOutputParser()
+            )
+
+            with open("summaries.txt", "w", encoding="utf-8") as f:
+                for chunk in chunks:
+                    total_chunks += 1
+                    try:
+                        summary = chain.invoke(chunk)
+                        if summary.strip():
+                            successful += 1
+                            f.write(summary + "\n\n" + "-" * 60 + "\n\n")
+                    except Exception as e:
+                        failed += 1
+                        print(f"Erreur sur un chunk : {e}")
+
+            # Timing & metrics
+            duration = time.time() - start_time
+            summary_time.set(duration)
+            summary_chunks.set(total_chunks)
+            success_chunks.set(successful)
+            failed_chunks.set(failed)
+
+            # Push metrics to Pushgateway
+            try:
+                push_to_gateway('localhost:9091', job='localrag_summary_job', registry=registry)
+                print("✅ Metrics pushed successfully to Prometheus Pushgateway!")
+            except Exception as e:
+                print(f"⚠️ Could not push metrics: {e}")
+
+            print("Résumé enregistré dans summaries.txt")
 
 
 
