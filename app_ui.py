@@ -33,15 +33,17 @@ st.markdown(
 )
 
 st.title("Local RAG Document QA")
-st.markdown("Upload a PDF and ask questions. You can also generate simple summaries by section or by selecting specific pages.")
-
+st.markdown("Upload a PDF and ask questions. You can also " \
+"generate simple summaries by section or " \
+"by selecting specific pages."
+)
 app = LocalRAGApp()
 data = None
 
 with st.sidebar:
     st.header("📁 Upload your PDF")
     uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
-    
+
     if uploaded_file:
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.read())
@@ -94,7 +96,7 @@ if uploaded_file:
         doc = fitz.open("temp.pdf")
         num_pages = len(doc)
         st.markdown(f"**Total pages:** {num_pages}")
-        
+
         page_selection = st.multiselect(
             "Select page numbers to summarize (starting from 1):",
             options=list(range(1, num_pages + 1))
