@@ -20,7 +20,7 @@ COPY . /app
 
 # python dependencies
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r .requirements.txt
 
 # pull Ollama models
 RUN ollama pull znbang/bge:small-en-v1.5-q8_0 && \
