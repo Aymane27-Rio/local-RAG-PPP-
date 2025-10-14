@@ -3,5 +3,4 @@ __pycache__
 .git
 *.log
 *.pdf
-*.txt
 *.pyc

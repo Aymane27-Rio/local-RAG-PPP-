@@ -16,14 +16,14 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 # working directory
 WORKDIR /app
 
-COPY requirements.txt /app/
+COPY . /app
+# COPY requirements.txt /app/
 
 # python dependencies
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 
-COPY . /app
 # pull Ollama models
 RUN ollama pull znbang/bge:small-en-v1.5-q8_0 && \
     ollama pull deepseek-r1:1.5b
