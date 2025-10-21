@@ -1,19 +1,56 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  localrag:
-    build: .
-    container_name: localrag_app
+  # =======================
+  # 🖥 FRONTEND
+  # =======================
+  frontend:
+    build: ./frontend
+    container_name: localrag_frontend
     ports:
       - "8501:8501"
-    volumes:
-      - .:/app
-    command: streamlit run app_ui.py --server.port=8501 --server.address=0.0.0.0
     depends_on:
-      - pushgateway
+      - pdf_microservice
+      - rag_microservice
+      - chat_microservice
     environment:
+      - PDF_SERVICE_URL=http://pdf_microservice:8001
+      - RAG_SERVICE_URL=http://rag_microservice:8002
+      - CHAT_SERVICE_URL=http://chat_microservice:8003
       - PUSHGATEWAY_URL=http://pushgateway:9091
 
+  # =======================
+  # 📄 PDF Service
+  # =======================
+  pdf_microservice:
+    build: ./microservices/pdf_microservice
+    container_name: pdf_microservice
+    ports:
+      - "8001:8001"
+
+  # =======================
+  # 🧠 RAG Service
+  # =======================
+  rag_microservice:
+    build: ./microservices/rag_microservice
+    container_name: rag_microservice
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./ollama_data:/root/.ollama  # cache model data
+
+  # =======================
+  # 💬 Chat Service
+  # =======================
+  chat_microservice:
+    build: ./microservices/chat_microservice
+    container_name: chat_microservice
+    ports:
+      - "8003:8003"
+
+  # =======================
+  # 📊 Monitoring
+  # =======================
   pushgateway:
     image: prom/pushgateway
     container_name: pushgateway
