@@ -1,3 +1,5 @@
 fastapi
 uvicorn
 tinydb
+requests
+prometheus_client

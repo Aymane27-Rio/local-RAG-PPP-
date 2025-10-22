@@ -18,18 +18,24 @@ services:
       - RAG_SERVICE_URL=http://rag_microservice:8002
       - CHAT_SERVICE_URL=http://chat_microservice:8003
       - PUSHGATEWAY_URL=http://pushgateway:9091
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   # =======================
-  # 📄 PDF Service
+  # 📄 PDF Microservice
   # =======================
   pdf_microservice:
     build: ./microservices/pdf_microservice
     container_name: pdf_microservice
     ports:
       - "8001:8001"
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   # =======================
-  # 🧠 RAG Service
+  # 🧠 RAG Microservice
   # =======================
   rag_microservice:
     build: ./microservices/rag_microservice
@@ -37,35 +43,49 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - ./ollama_data:/root/.ollama  # cache model data
+      - ./ollama_data:/root/.ollama  # persist Ollama model cache
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   # =======================
-  # 💬 Chat Service
+  # 💬 Chat Microservice
   # =======================
   chat_microservice:
     build: ./microservices/chat_microservice
     container_name: chat_microservice
     ports:
       - "8003:8003"
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   # =======================
-  # 📊 Monitoring
+  # 📊 Monitoring Stack
   # =======================
   pushgateway:
     image: prom/pushgateway
     container_name: pushgateway
     ports:
       - "9091:9091"
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   prometheus:
     image: prom/prometheus
     container_name: prometheus
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     depends_on:
       - pushgateway
+    restart: unless-stopped
+    networks:
+      - localrag_net
 
   grafana:
     image: grafana/grafana
@@ -77,3 +97,13 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+    restart: unless-stopped
+    networks:
+      - localrag_net
+
+# =======================
+# 🌐 Shared Network
+# =======================
+networks:
+  localrag_net:
+    driver: bridge

@@ -7,9 +7,9 @@ import os
 # ============================
 # Configuration
 # ============================
-PDF_SERVICE_URL = "http://localhost:8001"
-RAG_SERVICE_URL = "http://localhost:8002"
-CHAT_SERVICE_URL = "http://localhost:8003"
+PDF_SERVICE_URL = "http://pdf_microservice:8001"
+RAG_SERVICE_URL = "http://rag_microservice:8002"
+CHAT_SERVICE_URL = "http://chat_microservice:8003"
 
 # ============================
 # Streamlit UI Layout
@@ -47,81 +47,82 @@ st.markdown("Upload a PDF and interact with your documents using a local AI pipe
 with st.sidebar:
     st.header("📁 Upload your PDF")
     uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
+
     if uploaded_file:
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.read())
 
-        with st.spinner("🔄 Extracting content from PDF..."):
-            files = {"file": open("temp.pdf", "rb")}
-            response = requests.post(f"{PDF_SERVICE_URL}/extract-pages", files=files)
-            pdf_data = response.json()
-
-        if "error" in pdf_data:
-            st.error(f"❌ Error loading PDF: {pdf_data['error']}")
-            st.stop()
-        else:
-            st.success(f"✅ PDF loaded ({pdf_data['page_count']} pages)")
-            st.session_state["pdf_content"] = pdf_data["content"]
-
-            # Send to RAG service to build vector DB
-            with st.spinner("🔍 Building vector database..."):
-                build_resp = requests.post(f"{RAG_SERVICE_URL}/build-vector-db", json=pdf_data["content"])
-                if "error" in build_resp.json():
-                    st.error("❌ Failed to create vector DB.")
-                else:
-                    st.success("✅ Vector database created and ready!")
+        st.success(f"✅ PDF uploaded successfully!")
 
 # ============================
-# Question Answering
-# ============================
-if "pdf_content" in st.session_state:
-    st.markdown("---")
-    st.subheader("💬 Ask Questions")
-
-    question = st.text_input("🔎 Ask something about your document:")
-
-    if question:
-        with st.spinner("🤔 Thinking..."):
-            resp = requests.post(f"{RAG_SERVICE_URL}/query", json=question)
-            data = resp.json()
-            answer = data.get("answer", "⚠️ No response from backend.")
-
-            st.success(answer)
-
-            # Add conversation message
-            chat_payload = {"pdf_id": "default_pdf", "role": "user", "message": question}
-            requests.post(f"{CHAT_SERVICE_URL}/add", json=chat_payload)
-            chat_payload = {"pdf_id": "default_pdf", "role": "assistant", "message": answer}
-            requests.post(f"{CHAT_SERVICE_URL}/add", json=chat_payload)
-
-    with st.expander("🗂 Conversation History"):
-        conv = requests.get(f"{CHAT_SERVICE_URL}/get/default_pdf").json()
-        if conv:
-            for msg in conv:
-                role = "🧑" if msg["role"] == "user" else "🤖"
-                st.markdown(f"**{role} {msg['role'].capitalize()}:** {msg['content']}")
-        else:
-            st.info("No messages yet.")
-
-# ============================
-# Summarization (Page Selection)
+# PDF Preview and Summary
 # ============================
 if uploaded_file:
     st.markdown("---")
-    st.subheader("📖 Select Pages to Summarize")
+    st.subheader("📖 PDF Preview & Summarization")
 
     doc = fitz.open("temp.pdf")
     num_pages = len(doc)
     st.markdown(f"**Total pages:** {num_pages}")
 
     page_selection = st.multiselect(
-        "Select page numbers to summarize (starting from 1):",
-        options=list(range(1, num_pages + 1))
+        "Select pages to summarize:",
+        options=list(range(1, num_pages + 1)),
     )
 
     if page_selection and st.button("🧠 Summarize Selected Pages"):
-        with st.spinner("🧠 Generating summaries..."):
+        with st.spinner("Generating summaries..."):
+            # Extract text for selected pages
             selected_texts = [doc[p - 1].get_text() for p in page_selection]
-            response = requests.post(f"{RAG_SERVICE_URL}/build-vector-db", json=selected_texts)
-            summaries = [t[:500] + "..." for t in selected_texts]  # simple truncation mockup
-            st.text_area("📌 Summary (preview)", "\n\n".join(summaries), height=400)
+            joined_text = "\n\n".join(selected_texts)
+            res = requests.post(f"{PDF_SERVICE_URL}/extract-text", files={"file": open("temp.pdf", "rb")})
+            if res.status_code == 200:
+                st.success("✅ Extracted text successfully.")
+                st.text_area("📘 Extracted Text (Preview)", joined_text[:2000] + "...")
+            else:
+                st.error("Failed to extract text from PDF.")
+
+# ============================
+# Question Answering
+# ============================
+if uploaded_file:
+    st.markdown("---")
+    st.subheader("💬 Ask Questions About This PDF")
+
+    question = st.text_input("🔎 Ask a question about your document:")
+
+    if st.button("Ask"):
+        if not question.strip():
+            st.warning("Please enter a question first.")
+        else:
+            with st.spinner("🤔 Thinking..."):
+                resp = requests.post(f"{RAG_SERVICE_URL}/query", json={"question": question})
+                if resp.status_code == 200:
+                    answer = resp.json().get("answer", "")
+                    st.success(answer)
+
+                    # Store messages in chat history
+                    requests.post(f"{CHAT_SERVICE_URL}/save", json={"user": "user", "message": question})
+                    requests.post(f"{CHAT_SERVICE_URL}/save", json={"user": "assistant", "message": answer})
+                else:
+                    st.error("Error communicating with RAG service.")
+
+# ============================
+# Conversation History
+# ============================
+if uploaded_file:
+    st.markdown("---")
+    st.subheader("🗂 Conversation History")
+
+    if st.button("🔄 Refresh History"):
+        res = requests.get(f"{CHAT_SERVICE_URL}/history")
+        if res.status_code == 200:
+            chats = res.json()
+            if not chats:
+                st.info("No conversation yet.")
+            else:
+                for c in chats:
+                    role_icon = "🧑" if c["user"] == "user" else "🤖"
+                    st.markdown(f"**{role_icon} {c['user'].capitalize()}:** {c['message']}")
+        else:
+            st.error("Failed to fetch conversation history.")
