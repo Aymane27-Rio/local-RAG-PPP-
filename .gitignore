@@ -2,3 +2,4 @@ summaries.txt
 temp.pdf
 __pycache__/
 venv/
+ollama-data/
