@@ -34,6 +34,17 @@ services:
     networks:
       - localrag_net
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama_data:/root/.ollama  # persist models
+    restart: unless-stopped
+    networks:
+      - localrag_net
+
   # =======================
   # 🧠 RAG Microservice
   # =======================
@@ -42,13 +53,14 @@ services:
     container_name: rag_microservice
     ports:
       - "8002:8002"
-    volumes:
-      - ./ollama_data:/root/.ollama  # persist Ollama model cache
     environment:
-      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
     restart: unless-stopped
     networks:
       - localrag_net
+
 
   # =======================
   # 💬 Chat Microservice

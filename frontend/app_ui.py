@@ -1,7 +1,6 @@
 import streamlit as st
 import fitz  # PyMuPDF for preview
 import requests
-import json
 import os
 
 # ============================
@@ -39,7 +38,7 @@ st.markdown(
 )
 
 st.title("📄 Local RAG Document QA")
-st.markdown("Upload a PDF and interact with your documents using a local AI pipeline. 🔍")
+st.markdown("Upload a PDF and interact with your documents using your local AI pipeline. 🔍")
 
 # ============================
 # Sidebar: File Upload
@@ -52,35 +51,32 @@ with st.sidebar:
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.read())
 
-        st.success(f"✅ PDF uploaded successfully!")
+        st.success(f"✅ PDF '{uploaded_file.name}' uploaded successfully!")
+
+        # 🔥 Automatically call extract-and-embed when PDF is uploaded
+        with st.spinner("Building embeddings for your PDF..."):
+            files = {"file": open("temp.pdf", "rb")}
+            res = requests.post(f"{PDF_SERVICE_URL}/extract-and-embed", files=files)
+
+            if res.status_code == 200:
+                st.success("✅ Embeddings built successfully! You can now ask questions about this document.")
+            else:
+                st.error(f"❌ Failed to build embeddings: {res.text}")
 
 # ============================
-# PDF Preview and Summary
+# PDF Preview
 # ============================
 if uploaded_file:
     st.markdown("---")
-    st.subheader("📖 PDF Preview & Summarization")
+    st.subheader("📖 PDF Preview")
 
     doc = fitz.open("temp.pdf")
     num_pages = len(doc)
     st.markdown(f"**Total pages:** {num_pages}")
 
-    page_selection = st.multiselect(
-        "Select pages to summarize:",
-        options=list(range(1, num_pages + 1)),
-    )
-
-    if page_selection and st.button("🧠 Summarize Selected Pages"):
-        with st.spinner("Generating summaries..."):
-            # Extract text for selected pages
-            selected_texts = [doc[p - 1].get_text() for p in page_selection]
-            joined_text = "\n\n".join(selected_texts)
-            res = requests.post(f"{PDF_SERVICE_URL}/extract-text", files={"file": open("temp.pdf", "rb")})
-            if res.status_code == 200:
-                st.success("✅ Extracted text successfully.")
-                st.text_area("📘 Extracted Text (Preview)", joined_text[:2000] + "...")
-            else:
-                st.error("Failed to extract text from PDF.")
+    page_to_view = st.slider("Select a page to preview", 1, num_pages, 1)
+    page_text = doc[page_to_view - 1].get_text()
+    st.text_area(f"📘 Page {page_to_view} Preview", page_text[:2000] + "...")
 
 # ============================
 # Question Answering
@@ -101,7 +97,7 @@ if uploaded_file:
                     answer = resp.json().get("answer", "")
                     st.success(answer)
 
-                    # Store messages in chat history
+                    # Save to chat history
                     requests.post(f"{CHAT_SERVICE_URL}/save", json={"user": "user", "message": question})
                     requests.post(f"{CHAT_SERVICE_URL}/save", json={"user": "assistant", "message": answer})
                 else:

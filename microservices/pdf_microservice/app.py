@@ -2,33 +2,29 @@ from fastapi import FastAPI, UploadFile, File, Form
 import fitz  # PyMuPDF
 import tempfile
 import os
+import requests
 
-app = FastAPI(title="PDF Service", version="1.0")
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://rag_microservice:8002")
+
+app = FastAPI(title="PDF Service", version="1.1")
 
 @app.get("/")
 def root():
     return {"message": "PDF Service is running"}
 
-@app.post("/extract-text")
-async def extract_text(file: UploadFile = File(...)):
-    """Extract text from uploaded PDF"""
-    doc = fitz.open(stream=await file.read(), filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return {"text": text[:2000] + "..."}  # return preview only
 
-@app.post("/extract-pages")
-async def extract_pages(file: UploadFile = File(...), pages: str = Form(None)):
+@app.post("/extract-and-embed")
+async def extract_and_embed(file: UploadFile = File(...), pages: str = Form(None)):
     """
-    Upload PDF and optionally extract specific pages.
-    'pages' is a comma-separated list (e.g., "0,2,3")
+    Upload PDF, optionally select pages, extract text, and send to RAG for embedding.
     """
     try:
+        # ✅ Step 1: Save the PDF temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(await file.read())
             tmp_path = tmp.name
 
+        # ✅ Step 2: Extract text from all or selected pages
         doc = fitz.open(tmp_path)
         selected_texts = []
 
@@ -44,7 +40,32 @@ async def extract_pages(file: UploadFile = File(...), pages: str = Form(None)):
         doc.close()
         os.remove(tmp_path)
 
-        return {"page_count": len(selected_texts), "content": selected_texts}
+        print(f"📄 Extracted {len(selected_texts)} pages from {file.filename}")
+
+        # ✅ Step 3: Send text chunks to RAG microservice for embedding
+        try:
+            response = requests.post(
+                f"{RAG_SERVICE_URL}/build-vector-db",
+                json=selected_texts,  # ✅ send list directly
+                timeout=120
+            )
+
+            if response.status_code == 200:
+                print("✅ Embeddings built successfully by RAG service.")
+                return {
+                    "status": "success",
+                    "pdf": file.filename,
+                    "pages_embedded": len(selected_texts),
+                    "rag_response": response.json()
+                }
+            else:
+                print("❌ RAG service returned an error:", response.text)
+                return {"error": f"RAG service failed: {response.text}"}
+
+        except Exception as e:
+            print(f"❌ Failed to call RAG service: {e}")
+            return {"error": f"Failed to send data to RAG service: {e}"}
 
     except Exception as e:
+        print(f"❌ Error in PDF processing: {e}")
         return {"error": str(e)}

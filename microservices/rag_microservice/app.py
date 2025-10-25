@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI, Body
+from pydantic import BaseModel
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -7,8 +9,6 @@ from langchain_community.chat_models import ChatOllama
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_core.runnables import RunnableSequence
-from pydantic import BaseModel
 
 app = FastAPI(title="RAG Service", version="1.0")
 
@@ -24,17 +24,29 @@ async def build_vector_db(content: list[str] = Body(...)):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
         chunks = text_splitter.create_documents(content)
 
+        # Use OLLAMA_HOST for embeddings
+        ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+        os.environ["OLLAMA_BASE_URL"] = ollama_host  
+
+        embeddings = OllamaEmbeddings(
+            model="znbang/bge:small-en-v1.5-q8_0",
+            base_url=ollama_host
+        )
+
+
         db = Chroma.from_documents(
             documents=chunks,
-            embedding=OllamaEmbeddings(model="znbang/bge:small-en-v1.5-q8_0"),
+            embedding=embeddings,
             collection_name="local-rag"
         )
         return {"status": "success", "chunk_count": len(chunks)}
     except Exception as e:
         return {"error": str(e)}
 
+
 class QueryRequest(BaseModel):
     question: str
+
 
 @app.post("/query")
 async def query(request: QueryRequest):
@@ -43,10 +55,22 @@ async def query(request: QueryRequest):
     try:
         print(f"🧠 Received question: {question}")
 
-        llm = ChatOllama(model="deepseek-r1:1.5b")
+        # ✅ Ensure connection to Ollama running on Windows host
+        ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+        os.environ["OLLAMA_BASE_URL"] = ollama_host  # 🔥 Force it globally
+
+        print(f"🔗 Connecting to Ollama at: {ollama_host}")
+
+        llm = ChatOllama(model="deepseek-r1:1.5b", base_url=ollama_host)
+        embeddings = OllamaEmbeddings(
+            model="znbang/bge:small-en-v1.5-q8_0",
+            base_url=ollama_host
+        )
+
+
         db = Chroma(
             collection_name="local-rag",
-            embedding_function=OllamaEmbeddings(model="znbang/bge:small-en-v1.5-q8_0")
+            embedding_function=embeddings
         )
 
         query_prompt = PromptTemplate(
@@ -56,7 +80,11 @@ async def query(request: QueryRequest):
             Question: {question}"""
         )
 
-        retriever = MultiQueryRetriever.from_llm(db.as_retriever(), llm, prompt=query_prompt)
+        retriever = MultiQueryRetriever.from_llm(
+            db.as_retriever(),
+            llm,
+            prompt=query_prompt
+        )
 
         main_prompt = ChatPromptTemplate.from_template(
             "Context: {context}\n\nQuestion: {question}\n\nAnswer:"
