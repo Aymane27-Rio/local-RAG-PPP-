@@ -82,32 +82,22 @@ services:
     container_name: pushgateway
     ports:
       - "9091:9091"
-<<<<<<< HEAD
     restart: unless-stopped
     networks:
       - localrag_net
-=======
->>>>>>> b9adfce1630f5398fff971ea2f73482b1527b9af
 
   prometheus:
     image: prom/prometheus
     container_name: prometheus
     volumes:
-<<<<<<< HEAD
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-=======
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
->>>>>>> b9adfce1630f5398fff971ea2f73482b1527b9af
     ports:
       - "9090:9090"
     depends_on:
       - pushgateway
-<<<<<<< HEAD
     restart: unless-stopped
     networks:
       - localrag_net
-=======
->>>>>>> b9adfce1630f5398fff971ea2f73482b1527b9af
 
   grafana:
     image: grafana/grafana
@@ -119,7 +109,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
-<<<<<<< HEAD
     restart: unless-stopped
     networks:
       - localrag_net
@@ -130,5 +119,3 @@ services:
 networks:
   localrag_net:
     driver: bridge
-=======
->>>>>>> b9adfce1630f5398fff971ea2f73482b1527b9af
