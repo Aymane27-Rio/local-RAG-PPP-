@@ -78,3 +78,28 @@ then go to http://localhost:8501
 ```
 
 The Ollama service runs on your host machine at port 11434, which the microservices connects to via: http://host.docker.internal:11434
+
+(When running Kubernetes/minikube you may use an ExternalName service or configure accordingly.)
+
+
+### Protect local Ollama data (important)
+
+The project may create a local folder (e.g. ollama_data/ or .ollama/) that contains pulled model files and keys. **Do not commit** these files to Git.
+
+### Optional: Kubernetes
+
+If you prefer to run services on Kubernetes (minikube / Docker Desktop K8s), manifests are included under **k8s/**.
+Typical steps:
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/
+kubectl get pods -n local-rag
+kubectl get svc -n local-rag
+```
+
+Access the Streamlit UI via the Service NodePort or *minikube service streamlit-ui -n local-rag*.
+
+### License & Attribution
+
+This project uses third-party models and libraries (Ollama, LangChain, etc.). Respect their licenses and model usage policies.

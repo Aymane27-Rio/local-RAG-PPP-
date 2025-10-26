@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit-ui
+  namespace: local-rag
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit-ui
+  template:
+    metadata:
+      labels:
+        app: streamlit-ui
+    spec:
+      containers:
+        - name: streamlit-ui
+          image: your-dockerhub-username/streamlit-ui:latest
+          ports:
+            - containerPort: 8501
+          env:
+            - name: PDF_SERVICE_URL
+              value: "http://pdf-microservice:8001"
+            - name: RAG_SERVICE_URL
+              value: "http://rag-microservice:8002"
+            - name: CHAT_SERVICE_URL
+              value: "http://chat-microservice:8003"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamlit-ui
+  namespace: local-rag
+spec:
+  selector:
+    app: streamlit-ui
+  ports:
+    - port: 8501
+      targetPort: 8501
+  type: NodePort

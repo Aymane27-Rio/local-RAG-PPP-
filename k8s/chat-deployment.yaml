@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-microservice
+  namespace: local-rag
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-microservice
+  template:
+    metadata:
+      labels:
+        app: chat-microservice
+    spec:
+      containers:
+        - name: chat-microservice
+          image: your-dockerhub-username/chat-microservice:latest
+          ports:
+            - containerPort: 8003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-microservice
+  namespace: local-rag
+spec:
+  selector:
+    app: chat-microservice
+  ports:
+    - port: 8003
+      targetPort: 8003
